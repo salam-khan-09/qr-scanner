@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QR & Barcode Scanner</title>
+<meta name="theme-color" content="#050507">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lobster&family=Poppins:wght@400;600;700&family=Hind+Siliguri:wght@600;700&display=swap">
+<!-- HTML5 QR Code Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+<style>
+:root{
+  --c:#ff4d5e;
+  --c-l:color-mix(in srgb,var(--c) 70%,white);
+  --c-d:color-mix(in srgb,var(--c) 70%,black);
+  --bg:#23253a;--card:#2b2e47;--text:#eef0ff;--muted:#a3a8c8;
+  --sh-d:rgba(10,12,30,.6);--sh-l:rgba(80,86,130,.35);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Poppins","Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif;min-height:100vh;padding:84px 16px 40px;position:relative}
+.wrap{max-width:560px;margin:0 auto;text-align:center;position:relative;z-index:1;animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;}
+.pt{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.pt i{position:absolute;bottom:-20px;border-radius:50%;background:var(--c);opacity:.55;transition:background .3s;animation:rise linear infinite}
+@keyframes rise{to{transform:translate(var(--dx),-110vh);opacity:0}}
+
+@keyframes fadeInUp {
+  0% { opacity: 0; filter: blur(12px); transform: translateY(30px); }
+  100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+.me{position:absolute;top:14px;left:12px;z-index:16;display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;border-radius:30px;background:var(--card);box-shadow:6px 6px 14px var(--sh-d),-5px -5px 12px var(--sh-l);font-weight:700;font-size:14px;animation: fadeInUp 0.6s ease both;}
+.av{overflow:hidden;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:18px;background:linear-gradient(145deg,var(--c-l),var(--c));box-shadow:inset -3px -3px 6px rgba(0,0,0,.2),inset 3px 3px 6px rgba(255,255,255,.4)}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+h1{font-size:clamp(26px,6vw,40px);margin:12px 0 6px}
+.sub{color:var(--muted);margin:0 0 20px}
+.clay{border:0;cursor:pointer;color:#fff;font:inherit;font-weight:700;border-radius:26px;
+  background:linear-gradient(145deg,var(--c-l),var(--c));
+  box-shadow:8px 8px 18px color-mix(in srgb,var(--c-d) 55%,transparent),-6px -6px 14px var(--sh-l),inset -4px -4px 8px rgba(0,0,0,.18),inset 4px 4px 8px rgba(255,255,255,.4);
+  transition:transform .15s,box-shadow .15s,background .3s;position:relative;isolation:isolate;overflow:hidden;letter-spacing:.3px;
+  text-shadow:0 1px 2px rgba(0,0,0,.32)}
+.clay::before{content:"";position:absolute;left:10%;right:10%;top:2px;height:44%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));opacity:.75;pointer-events:none;z-index:-1}
+.clay:hover{transform:translateY(-2px)}
+.clay:active{transform:scale(.95)}
+.clay.ghost{background:linear-gradient(180deg,#34343c 0%,#1a1a1f 100%);color:#fff;text-shadow:none}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.card{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:15px;color:var(--text);background:var(--card);border-radius:28px;padding:22px 10px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:9px 9px 20px var(--sh-d),-7px -7px 16px var(--sh-l),inset 2px 2px 4px var(--sh-l);transition:transform .15s,box-shadow .15s;animation: fadeInUp 0.9s ease both;}
+.card:hover{transform:translateY(-4px)}
+.card:active{transform:scale(.97)}
+.lg{width:64px;height:64px;display:block}
+.lg svg{width:100%;height:100%;filter:drop-shadow(3px 4px 4px rgba(0,0,0,.25))}
+
+/* ফিচার হাইলাইট টেক্সট প্যানেল */
+.features-bar { display: flex; justify-content: center; gap: 12px; margin: 22px 0 10px; flex-wrap: wrap; }
+.feature-badge { background: var(--card); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; box-shadow: 4px 4px 10px var(--sh-d); transition: all 0.2s; }
+.feature-badge:hover { background: var(--c); color: #fff; transform: translateY(-2px); }
+
+/* ফুটার অপশন গ্রিড লেআউট */
+footer { position: relative; z-index: 1; max-width: 560px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid color-mix(in srgb, var(--c) 40%, transparent); text-align: left; font-size: 13px; color: var(--muted); }
+.fg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-bottom: 25px; }
+.fg h4 { margin: 0 0 10px; font-size: 14px; color: var(--c); font-weight: 700; }
+.fg a { display: block; color: var(--muted); text-decoration: none; margin-bottom: 8px; font-size: 13px; cursor: pointer; transition: color 0.2s; }
+.fg a:hover { color: var(--c); }
+.fd { margin: 18px 0 10px; line-height: 1.6; font-size: 12px; color: var(--muted); text-align: center; }
+.cp { text-align: center; margin: 15px 0 0; font-size: 12px; color: var(--c); font-weight: 600; }
+
+.panel{background:var(--card);border-radius:30px;padding:24px;box-shadow:10px 10px 22px var(--sh-d),-8px -8px 18px var(--sh-l),inset 2px 2px 4px var(--sh-l)}
+.overlay{position:fixed;inset:0;background:rgba(20,22,40,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:20;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .3s ease,visibility 0s linear .3s}
+.overlay.on{display:flex;visibility:visible;opacity:1;pointer-events:auto;transition:opacity .3s ease,visibility 0s;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.modal{width:100%;max-width:460px;max-height:90vh;overflow:auto;text-align:left;transform:scale(0.95);transition:transform 0.3s ease;}
+.overlay.on .modal{transform:scale(1);}
+.modal h2{margin:0 0 14px;font-size:22px}
+
+.row{display:flex;gap:10px;justify-content:flex-end;margin-top:15px}
+.sm{padding:12px 18px;border-radius:20px}
+
+/* কালার চেঞ্জ বাটন উপরের দিকে ফাঁকা জায়গায় সেট করা হয়েছে */
+#pick{position:fixed;right:20px;top:20px;z-index:15;display:flex;flex-direction:column;align-items:center;gap:12px;animation: fadeInUp 0.5s ease both;}
+#pickBtn{width:54px;height:54px;border-radius:50%;font-size:20px;padding:0;border:6px solid transparent;display:grid;place-items:center;
+  background:linear-gradient(180deg,var(--c-l) 0%,var(--c) 50%,var(--c-d) 140%) padding-box,linear-gradient(145deg,var(--sh-d),var(--sh-l)) border-box;
+  box-shadow:9px 9px 18px var(--sh-d),-7px -7px 14px var(--sh-l),0 0 24px color-mix(in srgb,var(--c) 45%,transparent)}
+#palette{display:none;flex-direction:column;gap:10px;padding:12px;border-radius:26px;background:var(--card);box-shadow:8px 8px 18px var(--sh-d),-6px -6px 14px var(--sh-l)}
+#palette.on{display:flex}
+.sw{width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;background-image:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75),rgba(255,255,255,0) 48%) !important;transition:transform .15s}
+
+/* BACKGROUND GRID & GLOW */
+:root{--bg:#050507;--card:#121217;--sh-d:rgba(0,0,0,.78);--sh-l:rgba(255,255,255,.07)}
+body::before,body::after{content:"";position:fixed;pointer-events:none;z-index:-1}
+body::before{inset:0;
+  background:radial-gradient(circle at 24% 16%,color-mix(in srgb,var(--c-d) 80%,#000) 0,color-mix(in srgb,var(--c-d) 38%,transparent) 20%,transparent 46%),
+             radial-gradient(circle at 88% 88%,color-mix(in srgb,var(--c-d) 50%,transparent) 0,transparent 38%);
+  animation:bgGlow 6s ease-in-out infinite}
+body::after{inset:-46px;
+  background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(ellipse at 30% 30%,#000 0,transparent 85%);mask-image:radial-gradient(ellipse at 30% 30%,#000 0,transparent 85%);
+  animation:gridShift 7s linear infinite}
+@keyframes bgGlow{50%{transform:scale(1.06);opacity:.82}}
+@keyframes gridShift{to{transform:translate(46px,46px)}}
+
+/* SUCCESS ANIMATION (TICK MARK) */
+.chk-container {display:none; width:90px; height:90px; margin:20px auto; text-align:center;}
+.chk-container.active {display:block;}
+.chk circle{fill:none;stroke:var(--c);stroke-width:3.5;stroke-dasharray:157;stroke-dashoffset:157;animation:draw .6s ease forwards}
+.chk path{fill:none;stroke:var(--c);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:draw .4s ease .5s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* SCANNER CONTAINER */
+#reader { width: 100%; border-radius: 20px; overflow: hidden; background: #000; }
+#scanResult { margin-top: 15px; word-break: break-all; text-align: center; font-weight: 600; color: var(--text); }
+h1{font-family:"Poppins","Hind Siliguri",system-ui,sans-serif;font-weight:700;color:var(--c)}
+.sub{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="splash"><div class="sp-logo">📷</div><div class="sp-title">QR Code Scanner</div><div class="sp-sub">লোড হচ্ছে...</div><div class="sp-bar"><i></i></div></div>
+<div id="toast"></div>
+<div class="pt" id="pt"></div>
+
+<div class="me">
+  <div class="av">
+    <img src="https://files.catbox.moe/x98okj.jpeg" alt="Salam">
+  </div>
+  Developed by Salam
+</div>
+
+<div class="wrap">
+  <h1>📷 QR Code Scanner</h1>
+  <p class="sub">যে কোনো কিউআর কোড বা বারকোড দ্রুত ও সহযে স্ক্যান করুন</p>
+  
+  <!-- ফিচার হাইলাইট ব্যাজ -->
+  <div class="features-bar">
+    <div class="feature-badge" onclick="showInfoModal('⚡ সুপার ফাস্ট স্ক্যানিং', 'আমাদের অ্যাপ অত্যন্ত দ্রুত গতিতে যেকোনো QR Code বা Barcode স্ক্যান করতে সক্ষম।')">⚡ সুপার ফাস্ট</div>
+    <div class="feature-badge" onclick="showInfoModal('🛡️ ১০০% নিরাপদ', 'আপনার স্ক্যান করা কোনো ডাটা বা পার্সোনাল তথ্য কোথাও সেভ বা শেয়ার করা হয় না।')">🛡️ ১০০% নিরাপদ</div>
+    <div class="feature-badge" onclick="showInfoModal('🌐 স্মার্ট লিংক অপশন', 'স্ক্যান করা তথ্য কোনো ওয়েবসাইট লিংক হলে আপনি সরাসরি এক ক্লিকে ব্রাউজ করতে পারবেন।')">🌐 স্মার্ট লিংক</div>
+    <div class="feature-badge" onclick="showGeneratorModal('text')">🛠️ কিউআর জেনারেটর</div>
+    <div class="feature-badge" onclick="showHistoryModal()">📜 হিস্ট্রি লগ</div>
+    <div class="feature-badge" id="langBadge">🔤 English</div>
+  </div>
+
+  <!-- কার্ড গ্রিড অপশনস -->
+  <div class="grid" style="margin-top: 20px;">
+    <button class="card" id="startCamBtn">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </g>
+        </svg>
+      </span>
+      ক্যামেরা স্ক্যান
+    </button>
+    
+    <button class="card" id="startFileBtn">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="#fff" stroke-width="2"/>
+          <rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="#fff" stroke-width="2"/>
+          <rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="#fff" stroke-width="2"/>
+          <path d="M14 14h3v3h-3zM17 17h4v4h-4z" fill="#fff"/>
+        </svg>
+      </span>
+      গ্যালারি থেকে স্ক্যান
+    </button>
+
+    <!-- নতুন যুক্ত করা ৪টি ফিচার কার্ড -->
+    <button class="card" onclick="showGeneratorModal('text')">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Text / URL
+    </button>
+
+    <button class="card" onclick="showGeneratorModal('wifi')">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M1.42 9a16 16 0 0 1 21.16 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="20" x2="12.01" y2="20" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Wi-Fi নেটওয়ার্ক
+    </button>
+
+    <button class="card" onclick="showGeneratorModal('vcard')">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="7" r="4" fill="none" stroke="#fff" stroke-width="2"/>
+        </svg>
+      </span>
+      vCard / কন্টাক্ট
+    </button>
+
+    <button class="card" onclick="showGeneratorModal('payment')">
+      <span class="lg">
+        <svg viewBox="0 0 24 24" width="100%" height="100%" style="animation: rotate3d 4s linear infinite; transform-style: preserve-3d; filter: drop-shadow(3px 4px 4px rgba(0,0,0,.25))">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" fill="none" stroke="#fff" stroke-width="2"/>
+          <line x1="1" y1="10" x2="23" y2="10" stroke="#fff" stroke-width="2"/>
+        </svg>
+      </span>
+      পেমেন্ট লিংক
+    </button>
+  </div>
+
+  <!-- ফুটার সেকশন -->
+  <footer>
+    <div class="fg">
+      <div>
+        <h4>Features</h4>
+        <a onclick="showInfoModal('Camera Scan', 'ক্যামেরা লাইভ চালু করে যেকোনো কিউআর কোড খুব সহজেই স্ক্যান করুন।')">Camera Scan</a>
+        <a onclick="showInfoModal('Gallery Scan', 'গ্যালারি থেকে কোডের ছবি বেছে নিয়ে স্ক্যান করে ফলাফল দেখুন।')">Gallery Scan</a>
+        <a onclick="showGeneratorModal('text')">QR Generator</a>
+        <a onclick="showHistoryModal()">Scan History</a>
+      </div>
+      <div>
+        <h4>App Info</h4>
+        <a onclick="showInfoModal('About Us', 'QR & Barcode Scanner হলো একটি দ্রুত এবং নিরাপদ ওয়েভ অ্যাপ।')">About Us</a>
+        <a onclick="showInfoModal('Developer', 'Developed by Salam. All rights reserved.')">Developer</a>
+        <a onclick="showInfoModal('Security', 'আমাদের অ্যাপে ইউজার ডাটা সম্পূর্ণ প্রাইভেট থাকে।')">Security</a>
+        <a onclick="showInfoModal('Updates', 'ভার্সন ২.১ - জেনারেটর এবং হিস্ট্রি ফিচার যুক্ত করা হয়েছে।')">Updates</a>
+      </div>
+      <div>
+        <h4>Help</h4>
+        <a onclick="showInfoModal('How to Use', '১. স্ক্যান টাইপ বেছে নিন।\n২. ক্যামেরা বা ছবি সিলেক্ট করুন।\n৩. রেজাল্ট কপি বা ওপেন করুন।')">How to Use</a>
+        <a onclick="showInfoModal('Supported Types', 'QR Code, Barcode, URL, Text ইত্যাদি সহ সকল প্রকার কোড সাপোর্ট করে।')">Supported Types</a>
+        <a onclick="showInfoModal('FAQ', 'প্রশ্ন: অ্যাপটি কি বিনামূল্যে?\nউত্তর: হ্যাঁ, সম্পূর্ণ ফ্রি।')">FAQ</a>
+        <a onclick="showInfoModal('Support', 'যেকোনো সমস্যায় ডেভেলপার সালাম এর সাথে যোগাযোগ করতে পারেন।')">Support Center</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a onclick="showInfoModal('Privacy Policy', 'আপনার কোনো পার্সোনাল স্ক্যান তথ্য আমাদের কাছে জমা রাখা হয় না।')">Privacy Policy</a>
+        <a onclick="showInfoModal('Terms of Service', 'অ্যাপটি সঠিকভাবে ও নিরাপদ কাজের উদ্দেশ্যে ব্যবহার করুন।')">Terms of Service</a>
+        <a onclick="showInfoModal('Disclaimer', 'এই অ্যাপটি একটি স্বাধীন কিউআর কোড স্ক্যানার টুল।')">Disclaimer</a>
+      </div>
+    </div>
+    
+    <p class="fd">QR & Barcode Scanner is a free utility tool. All scanned data stays in your browser and is never uploaded anywhere.</p>
+    <p class="cp">© 2026 Developed by Salam. All rights reserved.</p>
+  </footer>
+</div>
+
+<div id="pick">
+  <div id="palette"></div>
+  <button class="clay" id="pickBtn" aria-label="Change color">🎨</button>
+</div>
+
+<!-- Scanner Modal -->
+<div class="overlay" id="scanModal">
+  <div class="panel modal">
+    <h2 id="modalTitle">ক্যামেরা দিয়ে স্ক্যান করুন</h2>
+    
+    <!-- ফ্ল্যাশলাইট ও ক্যামেরা সুইচ অপশন -->
+    <div id="camControls" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+      <button class="clay sm" id="torchBtn" style="font-size:12px; padding:6px 12px;" onclick="toggleTorch()">ফ্ল্যাশলাইট: অফ</button>
+      <button class="clay sm" id="switchCamBtn" style="font-size:12px; padding:6px 12px;" onclick="switchCamera()">ক্যামেরা বদলান</button>
+    </div>
+
+    <div id="reader"></div>
+    <input type="file" id="qrInputFile" accept="image/*" style="display:none;">
+
+    <!-- Tick animation -->
+    <div class="chk-container" id="chkAnim">
+      <svg class="chk" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="25"/>
+        <path d="M19 31l8 8 15-17"/>
+      </svg>
+    </div>
+
+    <div id="scanResult"></div>
+
+    <div class="row">
+      <button class="clay sm ghost" id="closeModalBtn">বন্ধ করুন</button>
+      <button class="clay sm" id="openBtn" style="display:none;">ওপেন</button>
+      <button class="clay sm" id="actionBtn" style="display:none;">কপি করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR Generator Modal -->
+<div class="overlay" id="generatorModal">
+  <div class="panel modal">
+    <h2 id="genTitle">কিউআর কোড জেনারেটর</h2>
+    <p style="font-size:13px; color:var(--muted);">নিচে তথ্য দিয়ে কিউআর কোড তৈরি করুন:</p>
+    
+    <input type="hidden" id="genType" value="text">
+
+    <div id="genFieldsContainer">
+      <input type="text" id="genInput" placeholder="এখানে টেক্সট বা লিংক লিখুন..." style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:12px;">
+    </div>
+
+    <div class="gen-opts" id="genOptions">
+      <label>QR-এর রঙ <input type="color" id="qrFg" value="#000000"></label>
+      <label>ব্যাকগ্রাউন্ড <input type="color" id="qrBg" value="#ffffff"></label>
+      <button type="button" class="clay sm" id="logoBtn" style="font-size:12px;padding:8px 12px;">🖼️ লোগো যোগ করুন</button>
+      <input type="file" id="logoFile" accept="image/*" style="display:none;">
+    </div>
+    <div id="genResult" style="text-align:center; margin-top:10px;"></div>
+    <div class="row">
+      <button class="clay sm ghost" onclick="document.getElementById('generatorModal').classList.remove('on')">বন্ধ করুন</button>
+      <button class="clay sm" onclick="generateQRCode()">তৈরি করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="overlay" id="historyModal">
+  <div class="panel modal">
+    <h2>স্ক্যান হিস্ট্রি</h2>
+    
+    <!-- হিস্ট্রি সার্চ ও এক্সপোর্ট অপশন -->
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <input type="text" id="historySearch" placeholder="হিস্ট্রি খুঁজুন..." oninput="filterHistory()" style="flex:1; padding:8px 12px; border-radius:12px; border:1px solid var(--muted); background:var(--bg); color:var(--text); font-size:12px;">
+      <button class="clay sm" onclick="exportHistory()" style="font-size:11px; padding:8px 12px;">এক্সপোর্ট</button>
+    </div>
+
+    <div id="historyList" style="font-size:13px; max-height:200px; overflow-y:auto; margin-bottom:15px; color:var(--text);"></div>
+    <div class="row">
+      <button class="clay sm ghost" onclick="clearHistory()" style="background:#d9534f;">হিস্ট্রি মুছুন</button>
+      <button class="clay sm" onclick="document.getElementById('historyModal').classList.remove('on')">বন্ধ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- Common Information Modal -->
+<div class="overlay" id="infoModal">
+  <div class="panel modal">
+    <h2 id="infoModalTitle">তথ্য</h2>
+    <p id="infoModalText" style="font-size: 14px; line-height: 1.6; color: var(--text); white-space: pre-line;"></p>
+    <div class="row">
+      <button class="clay sm" id="closeInfoBtn">ঠিক আছে</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var COL=["#ff4d5e","#7c5cff","#2f9bff","#22c38e","#ff9a3d","#e056c8","#14b8c4","#f5b700"];
+var root=document.documentElement;
+
+function setC(c){root.style.setProperty("--c",c);try{localStorage.setItem("qr-color",c)}catch(e){}}
+try{var sc=localStorage.getItem("qr-color");if(sc)setC(sc)}catch(e){}
+
+COL.forEach(function(c){
+  var b=document.createElement("button");
+  b.className="sw";b.style.background=c;
+  b.onclick=function(){setC(c)};
+  document.getElementById("palette").appendChild(b);
+});
+
+document.getElementById("pickBtn").onclick=function(){document.getElementById("palette").classList.toggle("on")};
+
+for(var k=0;k<28;k++){
+  var d=document.createElement("i"),z=3+Math.random()*7;
+  d.style.cssText="left:"+Math.random()*100+"%;width:"+z+"px;height:"+z+"px;animation-duration:"+(9+Math.random()*12)+"s;animation-delay:-"+Math.random()*20+"s;--dx:"+(Math.random()*80-40)+"px";
+  document.getElementById("pt").appendChild(d);
+}
+
+var html5QrCode = null;
+var scannedUrl = "";
+var currentFacingMode = "environment";
+var torchOn = false;
+
+function openModal(title) {
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("scanResult").textContent = "";
+  document.getElementById("chkAnim").classList.remove("active");
+  document.getElementById("actionBtn").style.display = "none";
+  document.getElementById("openBtn").style.display = "none";
+  document.getElementById("camControls").style.display = "flex";
+  document.getElementById("scanModal").classList.add("on");
+}
+
+function closeModal() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    html5QrCode.stop().then(() => {
+      document.getElementById("scanModal").classList.remove("on");
+    }).catch(err => {
+      document.getElementById("scanModal").classList.remove("on");
+    });
+  } else {
+    document.getElementById("scanModal").classList.remove("on");
+  }
+}
+
+document.getElementById("closeModalBtn").onclick = closeModal;
+
+function showInfoModal(title, text) {
+  document.getElementById("infoModalTitle").textContent = title;
+  document.getElementById("infoModalText").textContent = text;
+  document.getElementById("infoModal").classList.add("on");
+}
+document.getElementById("closeInfoBtn").onclick = function() {
+  document.getElementById("infoModal").classList.remove("on");
+};
+
+// Audio & Vibration Feedback (Haptic & Sound)
+function playSuccessEffects() {
+  if (navigator.vibrate) navigator.vibrate(100);
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+// Smart Scan Parsing (Wi-Fi, vCard, Payment shortcuts)
+function parseScannedData(text) {
+  if (text.startsWith("WIFI:")) {
+    return "🌐 ওয়াই-ফাই নেটওয়ার্ক কোড সফলভাবে স্ক্যান করা হয়েছে।";
+  } else if (text.startsWith("BEGIN:VCARD")) {
+    return "👤 কন্টাক্ট বা ভি-কার্ড তথ্য পাওয়া গেছে।";
+  } else if (text.includes("bkash") || text.includes("nagad") || text.includes("rocket") || text.includes("upi://")) {
+    return "💸 পেমেন্ট কিউআর কোড শনাক্ত হয়েছে।";
+  }
+  return text;
+}
+
+// History Feature with Favorites & Search
+function saveToHistory(text) {
+  var history = JSON.parse(localStorage.getItem("qr_history") || "[]");
+  // Avoid duplicate immediate entries
+  if(history.length === 0 || history[0].text !== text) {
+    history.unshift({ text: text, starred: false });
+    if(history.length > 25) history.pop();
+    localStorage.setItem("qr_history", JSON.stringify(history));
+  }
+}
+
+function showHistoryModal() {
+  document.getElementById("historySearch").value = "";
+  renderHistoryList(JSON.parse(localStorage.getItem("qr_history") || "[]"));
+  document.getElementById("historyModal").classList.add("on");
+}
+
+function renderHistoryList(history) {
+  var listEl = document.getElementById("historyList");
+  if(history.length === 0) {
+    listEl.innerHTML = "<p style='text-align:center; color:var(--muted);'>কোনো হিস্ট্রি নেই।</p>";
+  } else {
+    listEl.innerHTML = history.map((item, index) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.1); word-break:break-all;">
+        <span style="flex:1;" onclick="navigator.clipboard.writeText('${item.text}'); alert('কপি করা হয়েছে!');">• ${item.text}</span>
+        <button onclick="toggleFavorite(${index})" style="background:none; border:none; cursor:pointer; font-size:16px; color:${item.starred ? '#f5b700' : 'var(--muted)'};">★</button>
+      </div>
+    `).join('');
+  }
+}
+
+function filterHistory() {
+  var query = document.getElementById("historySearch").value.toLowerCase();
+  var history = JSON.parse(localStorage.getItem("qr_history") || "[]");
+  var filtered = history.filter(item => item.text.toLowerCase().includes(query));
+  renderHistoryList(filtered);
+}
+
+function toggleFavorite(index) {
+  var history = JSON.parse(localStorage.getItem("qr_history") || "[]");
+  history[index].starred = !history[index].starred;
+  localStorage.setItem("qr_history", JSON.stringify(history));
+  renderHistoryList(history);
+}
+
+function clearHistory() {
+  localStorage.removeItem("qr_history");
+  showHistoryModal();
+}
+
+function exportHistory() {
+  var history = JSON.parse(localStorage.getItem("qr_history") || "[]");
+  if(history.length === 0) {
+    alert("এক্সপোর্ট করার মতো কোনো হিস্ট্রি নেই!");
+    return;
+  }
+  var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(history, null, 2));
+  var dlAnchor = document.createElement('a');
+  dlAnchor.setAttribute("href", dataStr);
+  dlAnchor.setAttribute("download", "qr_scan_history.json");
+  document.body.appendChild(dlAnchor);
+  dlAnchor.click();
+  dlAnchor.remove();
+}
+
+// QR Code Generator with Specific Types
+function showGeneratorModal(type) {
+  document.getElementById("genType").value = type || "text";
+  
+  var titleMap = {
+    'text': 'Text / URL জেনারেটর',
+    'wifi': 'Wi-Fi QR জেনারেটর',
+    'vcard': 'vCard কন্টাক্ট জেনারেটর',
+    'payment': 'পেমেন্ট QR জেনারেটর'
+  };
+  document.getElementById("genTitle").textContent = titleMap[type] || 'কিউআর কোড জেনারেটর';
+
+  toggleGeneratorFields(type);
+  document.getElementById("genResult").innerHTML = "";
+  document.getElementById("generatorModal").classList.add("on");
+}
+
+function toggleGeneratorFields(type) {
+  var container = document.getElementById("genFieldsContainer");
+  if(type === "text") {
+    container.innerHTML = `<input type="text" id="genInput" placeholder="এখানে টেক্সট বা লিংক লিখুন..." style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:12px;">`;
+  } else if(type === "wifi") {
+    container.innerHTML = `
+      <input type="text" id="wifiSsid" placeholder="ওয়াই-ফাই নাম (SSID)" style="width:100%; padding:10px; border-radius:12px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:8px;">
+      <input type="text" id="wifiPass" placeholder="ওয়াই-ফাই পাসওয়ার্ড" style="width:100%; padding:10px; border-radius:12px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:12px;">
+    `;
+  } else if(type === "vcard") {
+    container.innerHTML = `
+      <input type="text" id="vName" placeholder="পূর্ণ নাম" style="width:100%; padding:10px; border-radius:12px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:8px;">
+      <input type="text" id="vPhone" placeholder="মোবাইল নম্বর" style="width:100%; padding:10px; border-radius:12px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:12px;">
+    `;
+  } else if(type === "payment") {
+    container.innerHTML = `<input type="text" id="payLink" placeholder="পেমেন্ট লিংক বা নম্বর লিখুন..." style="width:100%; padding:12px; border-radius:14px; border:1px solid var(--muted); background:var(--bg); color:var(--text); margin-bottom:12px;">`;
+  }
+}
+
+function generateQRCode() {
+  var type = document.getElementById("genType").value;
+  var val = "";
+  if(type === "text") {
+    val = document.getElementById("genInput") ? document.getElementById("genInput").value.trim() : "";
+  } else if(type === "wifi") {
+    var ssid = document.getElementById("wifiSsid") ? document.getElementById("wifiSsid").value.trim() : "";
+    var pass = document.getElementById("wifiPass") ? document.getElementById("wifiPass").value.trim() : "";
+    if(ssid) val = `WIFI:S:${ssid};T:WPA;P:${pass};;`;
+  } else if(type === "vcard") {
+    var name = document.getElementById("vName") ? document.getElementById("vName").value.trim() : "";
+    var phone = document.getElementById("vPhone") ? document.getElementById("vPhone").value.trim() : "";
+    if(name) val = `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL:${phone}\nEND:VCARD`;
+  } else if(type === "payment") {
+    val = document.getElementById("payLink") ? document.getElementById("payLink").value.trim() : "";
+  }
+
+  if(!val) {
+    alert("দয়া করে সঠিক তথ্য দিন!");
+    return;
+  }
+  var qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(val)}`;
+  document.getElementById("genResult").innerHTML = `<img src="${qrImgUrl}" alt="QR Code" style="border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.3);"><br><span style="font-size:12px; color:var(--muted); display:block; margin-top:6px;">স্ক্যান করুন বা স্ক্রিনশট নিন</span>`;
+}
+
+// Torch & Camera Switch
+function toggleTorch() {
+  torchOn = !torchOn;
+  document.getElementById("torchBtn").textContent = "ফ্ল্যাশলাইট: " + (torchOn ? "অন" : "অফ");
+  if(html5QrCode && html5QrCode.isScanning) {
+    try {
+      html5QrCode.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
+    } catch(e) {}
+  }
+}
+
+function switchCamera() {
+  currentFacingMode = (currentFacingMode === "environment" ? "user" : "environment");
+  if(html5QrCode) {
+    html5QrCode.stop().then(() => {
+      startCamera();
+    }).catch(() => { startCamera(); });
+  }
+}
+
+function startCamera() {
+  document.getElementById("reader").style.display = "block";
+  if(!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+  html5QrCode.start(
+    { facingMode: currentFacingMode }, 
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScanSuccess
+  ).catch(err => {
+    document.getElementById("scanResult").innerHTML = "ক্যামেরা পারমিশন পাওয়া যায়নি।";
+  });
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  scannedUrl = decodedText;
+  playSuccessEffects();
+  saveToHistory(decodedText);
+  
+  if (html5QrCode && html5QrCode.isScanning) {
+    html5QrCode.stop();
+  }
+
+  document.getElementById("reader").style.display = "none";
+  document.getElementById("camControls").style.display = "none";
+  document.getElementById("chkAnim").classList.add("active");
+  
+  var formattedMsg = parseScannedData(decodedText);
+  document.getElementById("scanResult").textContent = "স্ক্যান সম্পন্ন: " + formattedMsg;
+
+  var actionBtn = document.getElementById("actionBtn");
+  var openBtn = document.getElementById("openBtn");
+  
+  actionBtn.style.display = "inline-block";
+  actionBtn.textContent = "কপি করুন";
+  actionBtn.onclick = function() {
+    navigator.clipboard.writeText(decodedText);
+    alert("কপি করা হয়েছে!");
+  };
+
+  if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+    openBtn.style.display = "inline-block";
+    openBtn.onclick = function() {
+      window.open(decodedText, '_blank');
+    };
+  } else {
+    openBtn.style.display = "none";
+  }
+}
+
+document.getElementById("startCamBtn").onclick = function() {
+  openModal("ক্যামেরা দিয়ে স্ক্যান করুন");
+  startCamera();
+};
+
+document.getElementById("startFileBtn").onclick = function() {
+  document.getElementById("qrInputFile").click();
+};
+
+document.getElementById("qrInputFile").addEventListener('change', e => {
+  if (e.target.files.length == 0) return;
+  
+  var imageFile = e.target.files[0];
+  openModal("ছবি স্ক্যান করা হচ্ছে...");
+  document.getElementById("reader").style.display = "none";
+  document.getElementById("camControls").style.display = "none";
+
+  if(!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+
+  html5QrCode.scanFile(imageFile, true)
+  .then(decodedText => {
+    onScanSuccess(decodedText, null);
+  })
+  .catch(err => {
+    document.getElementById("scanResult").textContent = "ছবিতে কোনো কিউআর কোড পাওয়া যায়নি।";
+  });
+});
+</script>
+
+<style>
+@keyframes rotate3d {
+  0% { transform: perspective(600px) rotateY(0deg); }
+  50% { transform: perspective(600px) rotateY(180deg); }
+  100% { transform: perspective(600px) rotateY(360deg); }
+}
+</style>
+<style>
+/* ===== QR RESULT (পুরো QR দেখানোর জন্য) ===== */
+.qr-box{display:inline-block;background:#fff;padding:10px;border-radius:18px;line-height:0;box-shadow:0 6px 18px rgba(0,0,0,.45);animation:qrPop .45s cubic-bezier(.16,1,.3,1) both}
+.qr-box canvas{width:220px;max-width:100%;height:auto;aspect-ratio:1/1;display:block;border-radius:8px}
+.qr-actions{display:flex;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+@keyframes qrPop{0%{opacity:0;transform:scale(.8)}100%{opacity:1;transform:scale(1)}}
+
+/* ===== GENERATOR OPTIONS (রঙ + লোগো) ===== */
+.gen-opts{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:2px 0 12px;font-size:12px;color:var(--muted)}
+.gen-opts label{display:flex;align-items:center;gap:6px}
+.gen-opts input[type=color]{width:34px;height:34px;padding:0;border:0;border-radius:10px;background:none;cursor:pointer}
+
+/* ===== CARD: CLAYMORPHISM + GLOWING SLIDER ===== */
+.card{position:relative;overflow:hidden;isolation:isolate;border-radius:32px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--c) 16%,#23232c) 0%,#15151b 60%,#101015 100%);
+  box-shadow:12px 12px 24px rgba(0,0,0,.65),-6px -6px 16px var(--sh-l),
+    inset -6px -6px 12px rgba(0,0,0,.5),inset 6px 6px 12px rgba(255,255,255,.12),
+    0 0 22px color-mix(in srgb,var(--c) 30%,transparent)}
+.card::before{content:"";position:absolute;left:12%;right:12%;top:3px;height:38%;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0));pointer-events:none;z-index:-1}
+.card::after{content:"";position:absolute;top:-10%;left:-70%;width:45%;height:120%;pointer-events:none;
+  background:linear-gradient(100deg,transparent 0%,color-mix(in srgb,var(--c) 55%,#fff) 50%,transparent 100%);
+  filter:blur(10px);opacity:.38;transform:skewX(-20deg);animation:cardGlowSlide 3.6s ease-in-out infinite}
+.card:nth-child(2)::after{animation-delay:.4s}
+.card:nth-child(3)::after{animation-delay:.8s}
+.card:nth-child(4)::after{animation-delay:1.2s}
+.card:nth-child(5)::after{animation-delay:1.6s}
+.card:nth-child(6)::after{animation-delay:2s}
+@keyframes cardGlowSlide{0%{left:-70%}60%,100%{left:130%}}
+
+/* ===== HISTORY ITEMS ===== */
+.h-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.h-ico{font-size:20px;flex:none}
+.h-body{flex:1;min-width:0;cursor:pointer}
+.h-text{font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-time{font-size:11px;color:var(--muted);margin-top:2px}
+.h-star{flex:none;background:none;border:0;font-size:20px;color:#555;cursor:pointer;padding:4px 6px}
+.h-star.on{color:#f5b700;text-shadow:0 0 10px rgba(245,183,0,.6)}
+
+/* ===== TOAST ===== */
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom,0px));transform:translate(-50%,24px);
+  max-width:min(92vw,420px);padding:12px 20px;border-radius:22px;font-size:14px;line-height:1.5;text-align:center;
+  color:var(--text);background:linear-gradient(145deg,#24242d,#14141a);z-index:10000;opacity:0;pointer-events:none;
+  box-shadow:8px 8px 18px rgba(0,0,0,.6),inset 3px 3px 8px rgba(255,255,255,.1),inset -3px -3px 8px rgba(0,0,0,.45),0 0 18px color-mix(in srgb,var(--c) 40%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 45%,transparent);transition:opacity .3s ease,transform .3s ease}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ===== SPLASH SCREEN ===== */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 22%,#050507),#050507 70%);
+  animation:splashOut .6s ease 1.6s forwards}
+#splash .sp-logo{font-size:64px;animation:spPulse 1.2s ease-in-out infinite;filter:drop-shadow(0 0 18px var(--c))}
+#splash .sp-title{font-size:26px;font-weight:700;color:var(--c)}
+#splash .sp-sub{font-size:13px;color:var(--muted)}
+#splash .sp-bar{width:150px;height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+#splash .sp-bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--c);box-shadow:0 0 10px var(--c);animation:spFill 1.5s ease forwards}
+@keyframes spPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes spFill{to{width:100%}}
+@keyframes splashOut{to{opacity:0;visibility:hidden;pointer-events:none}}
+</style>
+<script>
+/* ===== EXTRA FEATURES: Toast, Language, History, QR Generator, PWA ===== */
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- 1. Toast (alert-এর বদলে) ---------- */
+  var toastEl = $("toast"), toastTimer;
+  window.showToast = function (msg, ms) {
+    toastEl.textContent = String(msg);
+    toastEl.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("on"); }, ms || 2400);
+  };
+  window.alert = function (m) { window.showToast(m); };
+
+  /* ---------- 2. ভাষা পরিবর্তন (বাংলা / English) ---------- */
+  var DICT = {
+    "যে কোনো কিউআর কোড বা বারকোড দ্রুত ও সহযে স্ক্যান করুন": "Scan any QR code or barcode quickly and easily",
+    "যে কোনো কিউআর কোড বা বারকোড দ্রুত ও সহজে স্ক্যান করুন": "Scan any QR code or barcode quickly and easily",
+    "⚡ সুপার ফাস্ট": "⚡ Super Fast",
+    "🛡️ ১০০% নিরাপদ": "🛡️ 100% Secure",
+    "🌐 স্মার্ট লিংক": "🌐 Smart Link",
+    "🛠️ কিউআর জেনারেটর": "🛠️ QR Generator",
+    "📜 হিস্ট্রি লগ": "📜 History Log",
+    "📲 অ্যাপ ইনস্টল": "📲 Install App",
+    "ক্যামেরা স্ক্যান": "Camera Scan",
+    "গ্যালারি থেকে স্ক্যান": "Scan from Gallery",
+    "Wi-Fi নেটওয়ার্ক": "Wi-Fi Network",
+    "vCard / কন্টাক্ট": "vCard / Contact",
+    "পেমেন্ট লিংক": "Payment Link",
+    "লোড হচ্ছে...": "Loading...",
+
+    "ক্যামেরা দিয়ে স্ক্যান করুন": "Scan with Camera",
+    "ছবি স্ক্যান করা হচ্ছে...": "Scanning image...",
+    "ফ্ল্যাশলাইট: অফ": "Flashlight: Off",
+    "ফ্ল্যাশলাইট: অন": "Flashlight: On",
+    "ক্যামেরা বদলান": "Switch Camera",
+    "বন্ধ করুন": "Close",
+    "ওপেন": "Open",
+    "কপি করুন": "Copy",
+    "ঠিক আছে": "OK",
+    "তথ্য": "Info",
+    "ক্যামেরা পারমিশন পাওয়া যায়নি।": "Camera permission not available.",
+    "ছবিতে কোনো কিউআর কোড পাওয়া যায়নি।": "No QR code found in the image.",
+    "🌐 ওয়াই-ফাই নেটওয়ার্ক কোড সফলভাবে স্ক্যান করা হয়েছে।": "🌐 Wi-Fi network code scanned successfully.",
+    "👤 কন্টাক্ট বা ভি-কার্ড তথ্য পাওয়া গেছে।": "👤 Contact / vCard info found.",
+    "💸 পেমেন্ট কিউআর কোড শনাক্ত হয়েছে।": "💸 Payment QR code detected.",
+
+    "কিউআর কোড জেনারেটর": "QR Code Generator",
+    "Text / URL জেনারেটর": "Text / URL Generator",
+    "Wi-Fi QR জেনারেটর": "Wi-Fi QR Generator",
+    "vCard কন্টাক্ট জেনারেটর": "vCard Contact Generator",
+    "পেমেন্ট QR জেনারেটর": "Payment QR Generator",
+    "নিচে তথ্য দিয়ে কিউআর কোড তৈরি করুন:": "Enter details below to create a QR code:",
+    "এখানে টেক্সট বা লিংক লিখুন...": "Enter text or link here...",
+    "ওয়াই-ফাই নাম (SSID)": "Wi-Fi name (SSID)",
+    "ওয়াই-ফাই পাসওয়ার্ড": "Wi-Fi password",
+    "পূর্ণ নাম": "Full name",
+    "মোবাইল নম্বর": "Mobile number",
+    "পেমেন্ট লিংক বা নম্বর লিখুন...": "Enter payment link or number...",
+    "তৈরি করুন": "Generate",
+    "স্ক্যান করুন বা স্ক্রিনশট নিন": "Scan it or take a screenshot",
+    "QR-এর রঙ": "QR color",
+    "ব্যাকগ্রাউন্ড": "Background",
+    "🖼️ লোগো যোগ করুন": "🖼️ Add logo",
+    "✖ লোগো সরান": "✖ Remove logo",
+    "⬇️ ডাউনলোড": "⬇️ Download",
+    "📤 শেয়ার": "📤 Share",
+    "ডাউনলোড শুরু হয়েছে!": "Download started!",
+    "এই ব্রাউজারে শেয়ার সাপোর্ট নেই, ডাউনলোড করুন।": "Sharing isn't supported here, please download instead.",
+    "কিউআর তৈরি করা যায়নি, ইন্টারনেট চেক করুন।": "Couldn't create the QR, please check your internet.",
+    "লেখাটি অনেক বড়, ছোট করে চেষ্টা করুন।": "The text is too long, please shorten it.",
+    "রঙ খুব কাছাকাছি বা উল্টো, QR স্ক্যান নাও হতে পারে। গাঢ় রঙ + হালকা ব্যাকগ্রাউন্ড ব্যবহার করুন।": "Colors are too close or inverted, the QR may not scan. Use a dark color on a light background.",
+    "ছবিটি লোড করা যায়নি।": "Couldn't load the image.",
+    "দয়া করে সঠিক তথ্য দিন!": "Please enter valid information!",
+    "কপি করা হয়েছে!": "Copied!",
+    "অ্যাপ ইনস্টল হয়েছে!": "App installed!",
+
+    "স্ক্যান হিস্ট্রি": "Scan History",
+    "হিস্ট্রি খুঁজুন...": "Search history...",
+    "এক্সপোর্ট": "Export",
+    "হিস্ট্রি মুছুন": "Clear History",
+    "কোনো হিস্ট্রি নেই।": "No history yet.",
+    "এক্সপোর্ট করার মতো কোনো হিস্ট্রি নেই!": "No history to export!",
+
+    "⚡ সুপার ফাস্ট স্ক্যানিং": "⚡ Super Fast Scanning",
+    "আমাদের অ্যাপ অত্যন্ত দ্রুত গতিতে যেকোনো QR Code বা Barcode স্ক্যান করতে সক্ষম।": "Our app can scan any QR code or barcode at very high speed.",
+    "আপনার স্ক্যান করা কোনো ডাটা বা পার্সোনাল তথ্য কোথাও সেভ বা শেয়ার করা হয় না।": "None of your scanned data or personal information is saved or shared anywhere.",
+    "🌐 স্মার্ট লিংক অপশন": "🌐 Smart Link Option",
+    "স্ক্যান করা তথ্য কোনো ওয়েবসাইট লিংক হলে আপনি সরাসরি এক ক্লিকে ব্রাউজ করতে পারবেন।": "If the scanned data is a website link, you can open it directly with one click.",
+    "ক্যামেরা লাইভ চালু করে যেকোনো কিউআর কোড খুব সহজেই স্ক্যান করুন।": "Turn on the live camera and scan any QR code with ease.",
+    "গ্যালারি থেকে কোডের ছবি বেছে নিয়ে স্ক্যান করে ফলাফল দেখুন।": "Pick a code image from your gallery and scan it to see the result.",
+    "QR & Barcode Scanner হলো একটি দ্রুত এবং নিরাপদ ওয়েভ অ্যাপ।": "QR & Barcode Scanner is a fast and secure web app.",
+    "আমাদের অ্যাপে ইউজার ডাটা সম্পূর্ণ প্রাইভেট থাকে।": "In our app, user data stays completely private.",
+    "ভার্সন ২.১ - জেনারেটর এবং হিস্ট্রি ফিচার যুক্ত করা হয়েছে।": "Version 2.1 - generator and history features added.",
+    "১. স্ক্যান টাইপ বেছে নিন।\n২. ক্যামেরা বা ছবি সিলেক্ট করুন।\n৩. রেজাল্ট কপি বা ওপেন করুন।": "1. Choose a scan type.\n2. Select the camera or an image.\n3. Copy or open the result.",
+    "QR Code, Barcode, URL, Text ইত্যাদি সহ সকল প্রকার কোড সাপোর্ট করে।": "Supports all kinds of codes including QR Code, Barcode, URL, Text and more.",
+    "প্রশ্ন: অ্যাপটি কি বিনামূল্যে?\nউত্তর: হ্যাঁ, সম্পূর্ণ ফ্রি।": "Q: Is the app free?\nA: Yes, completely free.",
+    "যেকোনো সমস্যায় ডেভেলপার সালাম এর সাথে যোগাযোগ করতে পারেন।": "For any problem, you can contact the developer, Salam.",
+    "আপনার কোনো পার্সোনাল স্ক্যান তথ্য আমাদের কাছে জমা রাখা হয় না।": "Your personal scan data is never stored with us.",
+    "অ্যাপটি সঠিকভাবে ও নিরাপদ কাজের উদ্দেশ্যে ব্যবহার করুন।": "Please use the app properly and for safe purposes.",
+    "এই অ্যাপটি একটি স্বাধীন কিউআর কোড স্ক্যানার টুল।": "This app is an independent QR code scanner tool."
+  };
+  var PREFIX = [["স্ক্যান সম্পন্ন: ", "Scan complete: "]];
+
+  function norm(s) { return s.replace(/\uFE0F/g, ""); }
+  var MAP = {};
+  Object.keys(DICT).forEach(function (k) { MAP[norm(k)] = DICT[k]; });
+
+  function tr(s) {
+    var m = s.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    var core = norm(m[2]);
+    if (!core) return s;
+    var r = MAP[core];
+    if (r === undefined) {
+      for (var i = 0; i < PREFIX.length; i++) {
+        if (core.indexOf(PREFIX[i][0]) === 0) {
+          var rest = core.slice(PREFIX[i][0].length);
+          r = PREFIX[i][1] + (MAP[rest] !== undefined ? MAP[rest] : rest);
+          break;
+        }
+      }
+    }
+    return r === undefined ? s : m[1] + r + m[3];
+  }
+
+  var lang = "bn";
+  try { lang = localStorage.getItem("qr-lang") || "bn"; } catch (e) {}
+  var NODE = new WeakMap(), ATTR = new WeakMap(), mo;
+  var MOCFG = { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["placeholder"] };
+
+  function walk(node) {
+    if (node.nodeType === 3) {
+      var par = node.parentNode;
+      if (par && (par.nodeName === "SCRIPT" || par.nodeName === "STYLE")) return;
+      var rec = NODE.get(node);
+      if (lang === "en") {
+        if (rec && node.data === rec.tr) return;
+        var t = tr(node.data);
+        if (t !== node.data) { NODE.set(node, { orig: node.data, tr: t }); node.data = t; }
+        else if (rec) NODE.delete(node);
+      } else if (rec && node.data === rec.tr) {
+        node.data = rec.orig; NODE.delete(node);
+      }
+      return;
+    }
+    if (node.nodeType !== 1 || node.nodeName === "SCRIPT" || node.nodeName === "STYLE") return;
+    if (node.hasAttribute("placeholder")) {
+      var ph = node.getAttribute("placeholder"), ar = ATTR.get(node);
+      if (lang === "en") {
+        if (!(ar && ph === ar.tr)) {
+          var t2 = tr(ph);
+          if (t2 !== ph) { ATTR.set(node, { orig: ph, tr: t2 }); node.setAttribute("placeholder", t2); }
+        }
+      } else if (ar && ph === ar.tr) {
+        node.setAttribute("placeholder", ar.orig); ATTR.delete(node);
+      }
+    }
+    for (var c = node.firstChild; c; c = c.nextSibling) walk(c);
+  }
+
+  function applyLang() {
+    mo.disconnect();
+    try { walk(document.body); } finally { mo.observe(document.body, MOCFG); }
+  }
+
+  mo = new MutationObserver(function () { if (lang === "en") applyLang(); });
+
+  function setLang(l) {
+    lang = l;
+    try { localStorage.setItem("qr-lang", l); } catch (e) {}
+    document.documentElement.lang = l;
+    $("langBadge").textContent = l === "en" ? "🔤 বাংলা" : "🔤 English";
+    applyLang();
+    if ($("historyModal").classList.contains("on")) window.filterHistory();
+  }
+  $("langBadge").onclick = function () { setLang(lang === "en" ? "bn" : "en"); };
+  mo.observe(document.body, MOCFG);
+  if (lang === "en") setLang("en");
+
+  /* ---------- 3. হিস্ট্রি: আইকন + সময় ---------- */
+  function loadHist() {
+    try { return JSON.parse(localStorage.getItem("qr_history") || "[]"); } catch (e) { return []; }
+  }
+  function saveHist(h) { try { localStorage.setItem("qr_history", JSON.stringify(h)); } catch (e) {} }
+  function escHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function kindIcon(t) {
+    if (/^https?:\/\//i.test(t)) return "🔗";
+    if (t.indexOf("WIFI:") === 0) return "📶";
+    if (t.indexOf("BEGIN:VCARD") === 0) return "👤";
+    if (/bkash|nagad|rocket|upi:\/\//i.test(t)) return "💸";
+    return "📝";
+  }
+  function fmtTime(ts) {
+    try {
+      return new Date(ts).toLocaleString(lang === "en" ? "en-GB" : "bn-BD",
+        { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+
+  window.saveToHistory = function (text) {
+    var h = loadHist();
+    if (!h.length || h[0].text !== text) {
+      h.unshift({ text: text, starred: false, time: Date.now() });
+      if (h.length > 25) h.pop();
+      saveHist(h);
+    }
+  };
+
+  window.renderHistoryList = function (history, idxs) {
+    var el = $("historyList");
+    if (!history.length) {
+      el.innerHTML = "<p style='text-align:center; color:var(--muted);'>কোনো হিস্ট্রি নেই।</p>";
+      return;
+    }
+    el.innerHTML = history.map(function (item, i) {
+      var idx = idxs ? idxs[i] : i;
+      var time = item.time ? fmtTime(item.time) : "";
+      return '<div class="h-item"><span class="h-ico">' + kindIcon(item.text) + '</span>' +
+        '<div class="h-body" data-i="' + idx + '"><div class="h-text">' + escHtml(item.text) + '</div>' +
+        (time ? '<div class="h-time">' + escHtml(time) + '</div>' : '') + '</div>' +
+        '<button class="h-star' + (item.starred ? ' on' : '') + '" data-star="' + idx + '">★</button></div>';
+    }).join("");
+  };
+
+  window.filterHistory = function () {
+    var q = $("historySearch").value.toLowerCase(), items = [], idxs = [];
+    loadHist().forEach(function (it, i) {
+      if (it.text.toLowerCase().indexOf(q) !== -1) { items.push(it); idxs.push(i); }
+    });
+    window.renderHistoryList(items, idxs);
+  };
+
+  window.toggleFavorite = function (i) {
+    var h = loadHist();
+    if (!h[i]) return;
+    h[i].starred = !h[i].starred;
+    saveHist(h);
+    window.filterHistory();
+  };
+
+  $("historyList").addEventListener("click", function (e) {
+    var star = e.target.closest("[data-star]");
+    if (star) { window.toggleFavorite(+star.getAttribute("data-star")); return; }
+    var body = e.target.closest("[data-i]");
+    if (body) {
+      var item = loadHist()[+body.getAttribute("data-i")];
+      if (!item) return;
+      var done = function () { alert("কপি করা হয়েছে!"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(item.text).then(done, done);
+      } else done();
+    }
+  });
+
+  /* ---------- 4. QR জেনারেটর: রঙ, লোগো, ডাউনলোড, শেয়ার ---------- */
+  var logoImg = null, lastCanvas = null, gtoken = 0;
+  var TICK = '<div class="chk-container active"><svg class="chk" viewBox="0 0 60 60"><circle cx="30" cy="30" r="25"/><path d="M19 31l8 8 15-17"/></svg></div>';
+
+  function updateLogoBtn() {
+    $("logoBtn").textContent = logoImg ? "✖ লোগো সরান" : "🖼️ লোগো যোগ করুন";
+  }
+  $("logoBtn").onclick = function () {
+    if (logoImg) { logoImg = null; $("logoFile").value = ""; updateLogoBtn(); }
+    else $("logoFile").click();
+  };
+  $("logoFile").onchange = function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var im = new Image();
+    im.onload = function () { logoImg = im; updateLogoBtn(); };
+    im.onerror = function () { alert("ছবিটি লোড করা যায়নি।"); };
+    im.src = URL.createObjectURL(f);
+  };
+
+  function esc(s) { return s.replace(/([\\;,:"])/g, "\\$1"); }
+  function readValue() {
+    var type = $("genType").value;
+    function v(id) { return $(id) ? $(id).value.trim() : ""; }
+    if (type === "text") return v("genInput");
+    if (type === "wifi") {
+      var ssid = v("wifiSsid"), pass = v("wifiPass");
+      return ssid ? "WIFI:S:" + esc(ssid) + ";T:" + (pass ? "WPA" : "nopass") + ";P:" + esc(pass) + ";;" : "";
+    }
+    if (type === "vcard") {
+      var name = v("vName"), phone = v("vPhone");
+      return name ? "BEGIN:VCARD\nVERSION:3.0\nFN:" + name + "\nTEL:" + phone + "\nEND:VCARD" : "";
+    }
+    if (type === "payment") return v("payLink");
+    return "";
+  }
+
+  function lum(hex) {
+    var n = parseInt(hex.slice(1), 16), c = [n >> 16 & 255, n >> 8 & 255, n & 255].map(function (x) {
+      x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  function roundRectPath(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  function drawQR(text, fg, bg, logo) {
+    qrcode.stringToBytes = function (s) { return Array.prototype.slice.call(new TextEncoder().encode(s)); };
+    var qr = qrcode(0, "H");
+    qr.addData(text);
+    qr.make();
+    var n = qr.getModuleCount(), quiet = 4;
+    var cell = Math.max(4, Math.floor(720 / (n + quiet * 2))), size = cell * (n + quiet * 2);
+    var cv = document.createElement("canvas");
+    cv.width = cv.height = size;
+    var g = cv.getContext("2d");
+    g.fillStyle = bg; g.fillRect(0, 0, size, size);
+    g.fillStyle = fg;
+    for (var r = 0; r < n; r++)
+      for (var c = 0; c < n; c++)
+        if (qr.isDark(r, c)) g.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+    if (logo) {
+      var box = Math.round(size * 0.2), pad = Math.round(box * 0.12), x = (size - box) / 2;
+      g.fillStyle = bg;
+      roundRectPath(g, x - pad, x - pad, box + pad * 2, box + pad * 2, box * 0.2);
+      g.fill();
+      var s = Math.min(box / logo.naturalWidth, box / logo.naturalHeight);
+      var w = logo.naturalWidth * s, h = logo.naturalHeight * s;
+      g.drawImage(logo, (size - w) / 2, (size - h) / 2, w, h);
+    }
+    return cv;
+  }
+
+  function downloadQR() {
+    if (!lastCanvas) return;
+    lastCanvas.toBlob(function (b) {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "qrcode.png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      alert("ডাউনলোড শুরু হয়েছে!");
+    }, "image/png");
+  }
+  function shareQR() {
+    if (!lastCanvas) return;
+    lastCanvas.toBlob(function (b) {
+      var file = new File([b], "qrcode.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: "QR Code" }).catch(function () {});
+      } else alert("এই ব্রাউজারে শেয়ার সাপোর্ট নেই, ডাউনলোড করুন।");
+    }, "image/png");
+  }
+
+  window.generateQRCode = function () {
+    var val = readValue();
+    if (!val) { alert("দয়া করে সঠিক তথ্য দিন!"); return; }
+    if (typeof qrcode === "undefined") { alert("কিউআর তৈরি করা যায়নি, ইন্টারনেট চেক করুন।"); return; }
+    var fg = $("qrFg").value, bg = $("qrBg").value;
+    var lf = lum(fg), lb = lum(bg);
+    if (lf >= lb || (lb + 0.05) / (lf + 0.05) < 3) {
+      alert("রঙ খুব কাছাকাছি বা উল্টো, QR স্ক্যান নাও হতে পারে। গাঢ় রঙ + হালকা ব্যাকগ্রাউন্ড ব্যবহার করুন।");
+    }
+    var resEl = $("genResult"), cv;
+    try { cv = drawQR(val, fg, bg, logoImg); }
+    catch (e) { resEl.innerHTML = ""; alert("লেখাটি অনেক বড়, ছোট করে চেষ্টা করুন।"); return; }
+    lastCanvas = cv;
+    resEl.innerHTML = TICK;
+    var token = ++gtoken;
+    setTimeout(function () {
+      if (token !== gtoken || !resEl.querySelector(".chk")) return;
+      resEl.innerHTML = "";
+      var box = document.createElement("div");
+      box.className = "qr-box";
+      box.appendChild(cv);
+      var hint = document.createElement("span");
+      hint.style.cssText = "font-size:12px; color:var(--muted); display:block; margin-top:10px;";
+      hint.textContent = "স্ক্যান করুন বা স্ক্রিনশট নিন";
+      var acts = document.createElement("div");
+      acts.className = "qr-actions";
+      var b1 = document.createElement("button");
+      b1.className = "clay sm"; b1.textContent = "⬇️ ডাউনলোড"; b1.onclick = downloadQR;
+      var b2 = document.createElement("button");
+      b2.className = "clay sm"; b2.textContent = "📤 শেয়ার"; b2.onclick = shareQR;
+      acts.appendChild(b1); acts.appendChild(b2);
+      resEl.appendChild(box); resEl.appendChild(hint); resEl.appendChild(acts);
+    }, 1200);
+  };
+
+  /* ---------- 5. PWA: সার্ভিস ওয়ার্কার + ইনস্টল বাটন ---------- */
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+  var deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if ($("installBadge")) return;
+    var b = document.createElement("div");
+    b.className = "feature-badge"; b.id = "installBadge"; b.textContent = "📲 অ্যাপ ইনস্টল";
+    b.onclick = function () {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () { deferredPrompt = null; b.remove(); });
+    };
+    document.querySelector(".features-bar").appendChild(b);
+  });
+  window.addEventListener("appinstalled", function () { alert("অ্যাপ ইনস্টল হয়েছে!"); });
+
+  /* ---------- 6. স্প্ল্যাশ স্ক্রিন সরানো ---------- */
+  setTimeout(function () { var s = $("splash"); if (s) s.remove(); }, 2400);
+})();
+</script>
+</body>
+</html>
